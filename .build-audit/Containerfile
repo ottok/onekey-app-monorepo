@@ -1,0 +1,40 @@
+# Container for running OneKey wallet in Debian unstable
+FROM debian:sid
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -q && \
+    apt-get install -q --yes --no-install-recommends \
+      nodejs \
+      npm \
+      yarnpkg
+
+RUN ln -svf /usr/bin/yarnpkg /usr/bin/yarn
+
+# Desktop build app dependenies
+RUN apt-get install -q --yes --no-install-recommends \
+  g++ \
+  libsecret-1-dev \
+  make \
+  pkg-config \
+  rsync
+
+# Browser extension dependencies
+RUN apt-get install -q --yes --no-install-recommends \
+  zip
+
+# Don't emit telemetry
+ENV SENTRY_DISABLED=true
+
+# This build is always for production
+ENV NODE_ENV=production
+
+# Building the Electorn app needs more than 2GB, and the browser extensions more
+# than 4GB. Make it 8GB to be on the safe side.
+ENV NODE_OPTIONS=--max-old-space-size=8192
+
+# Usage
+#   podman build -t onekey-container --file .build-audit/Containerfile
+#   podman run --interactive --network host --tty --rm --shm-size=1G --volume=$PWD:/tmp/run --workdir=/tmp/run onekey-container bash
+#     .build-audit/build-extension-for-linux.sh
+#     .build-audit/build-electron-app-for-linux.sh
