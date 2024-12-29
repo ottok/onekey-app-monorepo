@@ -1,0 +1,60 @@
+# Container for running OneKey wallet in Debian unstable
+FROM debian:sid
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install minimal X11 environment to be able to run e.g. xeyes
+RUN apt-get update -q && \
+    apt-get install -q --yes --no-install-recommends \
+      x11-apps
+
+RUN apt-get install -q --yes --no-install-recommends \
+      libasound2t64 \
+      libatk-bridge2.0-0t64 \
+      libatk1.0-0t64 \
+      libcairo2 \
+      libcups2t64 \
+      libdrm2 \
+      libgbm1 \
+      libglib2.0-0t64 \
+      libgtk-3-0t64 \
+      libnss3 \
+      libp11-kit0 \
+      libpango-1.0-0 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxkbcommon0 \
+      libxrandr2
+
+# AppImage needs FUSE, otherwise it will fail on
+#   dlopen(): error loading libfuse.so.2
+# or without module:
+#   fuse: device not found, try 'modprobe fuse' first
+#RUN apt-get install -q --yes --no-install-recommends libfuse2 kmod linux-image-5.15.0-127-generic
+#
+# Conclusion: Skip using AppImage and run binary directly inside a container
+
+# Usage
+#   podman build -t x11-container --file .run-audit/Containerfile
+#   podman run --interactive --tty --rm \
+#     --shm-size=1G --volume=$PWD:/tmp/run --workdir=/tmp/run \
+#     -e DISPLAY=$DISPLAY \
+#     -v /tmp/.X11-unix:/tmp/.X11-unix \
+#     --userns=keep-id \
+#     --network=none \
+#     x11-container \
+#     ./apps/desktop/build-electron/linux-unpacked/onekey-wallet
+#
+# Without $DISPLAY apps will fail on:
+#  Error: Can't open display:
+#
+# only needed if --network=none:
+#  -v /tmp/.X11-unix:/tmp/.X11-unix \
+#
+# not needed:
+#  -v $XAUTHORITY:/tmp/run/.Xauthority \
+#
+# If you need live network, use --network=host instead.
+#
+# If you want to have root inside the container, remove the --userns line and
+# add --no-sandbox to Electron call.
